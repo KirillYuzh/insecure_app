@@ -1,0 +1,491 @@
+body{
+  font-family: 'Jura';
+background-color: var(--white);
+}
+
+a {
+  text-decoration: none;
+  color: black;
+}
+
+button {
+margin: auto;
+padding: 0.5rem;
+width: fit-content;
+border-style: solid;
+border-width: 2px;
+border-radius: 10px;
+border-color: var(--silver);
+background-color: var(--white);
+}
+
+button:hover{
+transition: 0.2s;
+box-shadow: 
+  0px 0px 15px rgb(211, 211, 211, 0.2),
+  5px 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+button:active{
+background-color: var(--silver);
+color: var(--white);
+}
+
+p {
+white-space: normal;
+  word-wrap: break-word;
+}
+
+.copy-button {
+padding: 0.2rem;
+font-size: 1rem;
+margin: auto;
+width: 4rem;
+border-style: none;
+background-color: rgb(0, 0, 0, 0.0);
+color: var(--silver);
+}
+
+.copy-button:hover{
+transition: 0.2s;
+box-shadow: 1px 1px 5px var(--purple);
+}
+
+.copy-button:active{
+background-color: var(--purple);
+color: var(--white);
+}
+
+input {
+border-style: none;
+border-bottom-style: solid;
+border-color: var(--silver);
+}
+
+.error-red {
+color: var(--red);
+font-weight: 500;
+font-size: 2rem;
+text-align: center;
+}
+
+.subtitle {
+  color:rgba(0, 0, 0, 0.5);
+}
+
+/* Стили для кастомного toast */
+.custom-toast {
+padding: 1rem;
+margin: 1rem;
+width: fit-content;
+height: fit-content;
+border-style: solid;
+border-radius: 10px;
+border-width: 2px;
+border-color: #FFFFFF;
+box-shadow: 
+  0px 0px 15px rgba(211, 211, 211, 0.2),  /* Soft all-around shadow */
+  5px 5px 15px rgba(0, 0, 0, 0.2);
+background-color: #ffffff; /* Белый фон */
+color: #000000; /* Чёрный текст */
+}
+
+/* Стили для прогресс-бара */
+.Toastify__progress-bar {
+background-color: var(--purple); /* Фиолетовый цвет прогресс-бара */
+}
+
+.blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 90vw;
+  margin: 0 auto;
+  padding: 0 1rem; /* Отступы слева и справа */
+  justify-content: center; /* Выравнивание по левому краю */
+}
+
+.tasks-col {
+  flex: auto;
+  box-sizing: border-box;
+}
+
+.task-card{
+  width: 13rem;
+  margin: 1rem;
+}
+
+.scoring-table-row-elemet {
+min-width: 25rem;
+max-width: 60rem;
+text-align: center; 
+display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 50px;
+  text-align: center;
+}
+
+.community-row-element {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+width: fit-content;
+min-width: 25rem;
+max-width: 60rem;
+}
+
+.card{
+  padding: 1rem;
+  margin: 1rem;
+  width: fit-content;
+  height: fit-content;
+  border-style: solid;
+  border-radius: 10px;
+  border-width: 2px;
+  border-color: #FFFFFF;
+box-shadow: 
+  0px 0px 15px rgb(211, 211, 211, 0.2),  /* Soft all-around shadow */
+  5px 5px 15px rgba(0, 0, 0, 0.2);
+  /* 5px 5px 15px rgb(106, 90, 205, 0.3); */
+}
+
+.card-gradient{
+  display: block;
+  padding: 1rem;
+  margin: 1rem;
+  width: fit-content;
+  height: fit-content;
+  border-style: solid;
+  border-radius: 10px;
+  border-width: 2px;
+  border-color: #FFFFFF;
+  box-shadow: 
+  0px 0px 15px rgb(211, 211, 211, 0.2),
+  5px 5px 15px rgba(0, 0, 0, 0.2);
+background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y), var(--silver) 0%, var(--silver) 35%, white 100%); 
+}
+
+.card-gradient.silver{
+  background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y), grey 0%, var(--silver) 35%, white 100%); 
+}
+
+.card-gradient.pink{
+  background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y), var(--pink) 0%, var(--silver) 40%, white 100%); 
+}
+
+.card-gradient.green{
+  background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y), green 0%, var(--silver) 40%, white 100%); 
+}
+
+.card-gradient.green.red{
+  color: red;
+}
+
+.card-gradient.task{
+width: fit-content;
+min-width: 14rem;
+max-width: 20rem;
+  transition:
+  --pos-x 0.5s,
+  --pos-y 0.5s,
+  --spread-x 0.5s,
+  --spread-y 0.5s,
+  --color-1 0.5s,
+  --color-2 0.5s,
+  --color-3 0.5s,
+  --color-4 0.5s,
+  --color-5 0.5s,
+  --border-angle 0.5s,
+  --border-color-1 0.5s,
+  --border-color-2 0.5s,
+  --stop-1 0.5s,
+  --stop-2 0.5s,
+  --stop-3 0.5s,
+  --stop-4 0.5s,
+  --stop-5 0.5s;
+      background: radial-gradient(
+          var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+          var(--color-1) var(--stop-1),
+          var(--color-2) var(--stop-2),
+          var(--color-3) var(--stop-3),
+          var(--color-4) var(--stop-4),
+          var(--color-5) var(--stop-5)
+      );
+}
+
+.card-gradient.task::before{
+  content: '';
+position: absolute;
+inset: 0;
+border-radius: inherit;
+padding: 1px;
+/* background-image: linear-gradient(var(--border-angle), var(--border-color-1), var(--border-color-2)); */
+mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+mask-composite: exclude;
+pointer-events: none;
+}
+
+.card-gradient.task:hover{
+
+  --pos-x: 0%;
+--pos-y: 91.51%;
+--spread-x: 120.24%;
+--spread-y: 103.18%;
+
+--color-white: var(--purple);
+--color-purple: #ffffff;
+
+--border-angle: 190deg;
+--border-color-1: hsla(340, 78%, 90%, 0.1);
+--border-color-2: hsla(340, 75%, 90%, 0.6);
+
+--stop-1: 0%;
+--stop-2: 8.8%;
+--stop-3: 21.44%;
+--stop-4: 71.34%;
+--stop-5: 85.76%;
+}
+
+.navbar{
+  margin: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 90vw; 
+min-width: 70rem;
+  border-style: solid; 
+  border-color: var(--silver); 
+  border-width: 1px; 
+  border-radius: 10px; 
+  margin-left: auto; 
+  margin-right: auto;
+  padding: 0.5rem;
+}
+.navbar-link{
+  font-size: 1.25rem; 
+  color: rgb(0, 0, 0, 0.7); 
+  text-decoration: none;
+  gap: 2rem;
+}
+
+.navbar-link:hover{
+  color: var(--black);
+}
+
+.black_box{
+font-size: large;
+white-space: pre;
+margin-left: auto;
+margin-right: auto;
+width: 70vw;
+/* max-width: 90vw; */
+color: whitesmoke;
+background-color: rgb(0, 0, 0, 0.05);
+color: var(--black);
+border-radius: 10px;
+padding: 2rem;
+box-shadow: 
+  0px 0px 15px rgb(211, 211, 211, 0.2),
+  5px 5px 15px rgba(0, 0, 0, 0.2);
+/* border-width: 3px; */
+/* border-style: solid; */
+/* border-color: var(--black); */
+}
+
+.soft-rise {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.soft-rise.hidden {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* colors and stops */
+
+@property --pos-x {
+syntax: '<percentage>';
+initial-value: 11.14%;
+inherits: false;
+}
+
+@property --pos-y {
+syntax: '<percentage>';
+initial-value: 140%;
+inherits: false;
+}
+
+@property --spread-x {
+syntax: '<percentage>';
+initial-value: 150%;
+inherits: false;
+}
+
+@property --spread-y {
+syntax: '<percentage>';
+initial-value: 180.06%;
+inherits: false;
+}
+
+@property --color-1 {
+syntax: '<color>';
+initial-value: rgb(211, 211, 211, 0.5);
+inherits: false;
+}
+
+@property --color-2 {
+syntax: '<color>';
+initial-value: rgb(211, 211, 211, 0.5);
+inherits: false;
+}
+
+@property --color-3 {
+syntax: '<color>';
+initial-value: #ffffff;
+inherits: false;
+}
+
+@property --color-4 {
+syntax: '<color>';
+initial-value: rgb(211, 211, 211, 0.5);
+inherits: false;
+}
+
+@property --color-5 {
+syntax: '<color>';
+initial-value: #d3d3d3;
+inherits: false;
+}
+
+@property --red {
+syntax: '<color>';
+initial-value: #6a5acd;
+inherits: false;
+}
+
+@property --black {
+syntax: '<color>';
+initial-value: #000;
+inherits: false;
+}
+
+@property --white {
+syntax: '<color>';
+initial-value: #FFFFFF;
+inherits: false;
+}
+
+@property --blue {
+syntax: '<color>';
+initial-value: #4C5B9B;
+inherits: false;
+}
+
+@property --light-blue {
+syntax: '<color>';
+initial-value: #A2D2FF;
+inherits: false;
+}
+
+@property --green {
+syntax: '<color>';
+initial-value: #6B8E23;
+inherits: false;
+}
+
+@property --light-green {
+syntax: '<color>';
+initial-value: #98FB98;
+inherits: false;
+}
+
+@property --light-yellow {
+syntax: '<color>';
+initial-value: #FFF8DC;
+inherits: false;
+}
+
+@property --yellow {
+syntax: '<color>';
+initial-value: #FFD700;
+inherits: false;
+}
+
+@property --orange {
+syntax: '<color>';
+initial-value: #FF8C00;
+inherits: false;
+}
+
+@property --light-orange {
+syntax: '<color>';
+initial-value: #FFCBA4;
+inherits: false;
+}
+
+@property --silver {
+syntax: '<color>';
+initial-value: #d3d3d3;
+inherits: false;
+}
+
+@property --purple {
+syntax: '<color>';
+initial-value: #6a5acd;
+inherits: false;
+}
+
+@property --pink {
+syntax: '<color>';
+initial-value: #ff69b4;
+inherits: false;
+}
+
+@property --border-angle {
+syntax: '<angle>';
+initial-value: 20deg;
+inherits: true;
+}
+
+@property --border-color-1 {
+syntax: '<color>';
+initial-value: hsla(340, 75%, 60%, 0.2);
+inherits: true;
+}
+
+@property --border-color-2 {
+syntax: '<color>';
+initial-value: hsla(340, 75%, 40%, 0.75);
+inherits: true;
+}
+
+@property --stop-1 {
+syntax: '<percentage>';
+initial-value: 37.35%;
+inherits: false;
+}
+
+@property --stop-2 {
+syntax: '<percentage>';
+initial-value: 61.36%;
+inherits: false;
+}
+
+@property --stop-3 {
+syntax: '<percentage>';
+initial-value: 78.42%;
+inherits: false;
+}
+
+@property --stop-4 {
+syntax: '<percentage>';
+initial-value: 89.52%;
+inherits: false;
+}
+
+@property --stop-5 {
+syntax: '<percentage>';
+initial-value: 100%;
+inherits: false;
+}
