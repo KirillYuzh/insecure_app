@@ -28,20 +28,47 @@ func main() {
 
 	// Маршруты
 	router.GET("/", getReadme)
+	router.POST("/login", login)
 	router.POST("/login/", login)
+
+	router.POST("/logout", logout)
 	router.POST("/logout/", logout)
+
+	router.POST("/signup", signup)
 	router.POST("/signup/", signup)
+
+	router.GET("/tasks", getTasks)
 	router.GET("/tasks/", getTasks)
+
+	router.GET("/scoring-table", getScoringTable)
 	router.GET("/scoring-table/", getScoringTable)
+
+	router.GET("/account", authMiddleware(), getAccount)
 	router.GET("/account/", authMiddleware(), getAccount)
+
+	router.GET("/all-tasks", authMiddleware(), getAllTasks)
 	router.GET("/all-tasks/", authMiddleware(), getAllTasks)
+
+	router.PATCH("/tasks/:id", updateTaskActive)
 	router.PATCH("/tasks/:id/", updateTaskActive)
-	router.OPTIONS("/tasks/:id/", func(c *gin.Context) {
-		c.Status(http.StatusNoContent) // 204 No Content
+
+	router.OPTIONS("/tasks/:id", func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
 	})
+	router.OPTIONS("/tasks/:id/", func(c *gin.Context) {
+		c.Status(http.StatusNoContent)
+	})
+
+	router.GET("/tasks/:id", getTask)
 	router.GET("/tasks/:id/", getTask)
+
+	router.POST("/tasks/:id/flag", authMiddleware(), checkTaskFlag)
 	router.POST("/tasks/:id/flag/", authMiddleware(), checkTaskFlag)
+
+	router.POST("/admin-panel-add-task", authMiddleware(), addTask)
 	router.POST("/admin-panel-add-task/", authMiddleware(), addTask)
+
+	router.GET("/community", getAllTeams)
 	router.GET("/community/", getAllTeams)
 
 	// Запуск сервера

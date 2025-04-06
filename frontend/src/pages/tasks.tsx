@@ -57,7 +57,7 @@ export default function TasksPage() {
     try {
       const result = await api.post<{ solved: boolean }>(
         `/tasks/${selectedTask.id}/flag/`,
-        { flag: flag } // ключ `flag` должен совпадать с backend'ом (структура `FlagRequest`)
+        { flag: flag }
       );
   
       if (result.data.solved) {

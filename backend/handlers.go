@@ -310,10 +310,8 @@ func getScoringTable(c *gin.Context) {
 }
 
 func getTasks(c *gin.Context) {
-	// Получаем задачи из базы данных
 	rows, err := db.Query("SELECT id, title, description, weight, category FROM tasks WHERE active = true")
 	if err != nil {
-		log.Printf("Failed to fetch tasks: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tasks"})
 		return
 	}
@@ -322,50 +320,30 @@ func getTasks(c *gin.Context) {
 	var tasks []Task
 	var solvedTasks []string
 
-	// Проверяем авторизацию пользователя
 	username, isAuthenticated := c.Get("username")
 	if isAuthenticated {
-		// Получаем список решенных задач для авторизованного пользователя
 		err = db.QueryRow(
 			"SELECT solved_tasks FROM users WHERE username = $1",
 			username,
 		).Scan(pq.Array(&solvedTasks))
-
 		if err != nil && err != sql.ErrNoRows {
-			log.Printf("Failed to fetch solved tasks: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch solved tasks"})
 			return
 		}
 	}
 
-	// Обрабатываем результаты запроса задач
 	for rows.Next() {
 		var task Task
 		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Weight, &task.Category); err != nil {
-			log.Printf("Failed to scan task: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan task"})
 			return
 		}
-		task.Active = true
 		tasks = append(tasks, task)
 	}
 
-	if err := rows.Err(); err != nil {
-		log.Printf("Error after scanning tasks: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error after scanning tasks"})
-		return
-	}
-
-	// Формируем ответ
-	response := gin.H{
-		"tasks": tasks,
-	}
-
-	// Добавляем solved_tasks в ответ, если пользователь авторизован
+	response := gin.H{"tasks": tasks}
 	if isAuthenticated {
-		response["user"] = gin.H{
-			"solved_tasks": solvedTasks,
-		}
+		response["user"] = gin.H{"solved_tasks": solvedTasks}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -376,8 +354,8 @@ type PlayerWithTasks struct {
 	Score            int      `json:"score"`
 	IsInTeam         bool     `json:"is_in_team"`
 	PlayerTeamTitle  string   `json:"player_team_title"`
-	SolvedTasks      []int    `json:"solved_tasks"`       // id задач
-	SolvedTaskTitles []string `json:"solved_task_titles"` // названия задач
+	SolvedTasks      []string `json:"solved_tasks"`
+	SolvedTaskTitles []string `json:"solved_task_titles"`
 }
 
 func getAccount(c *gin.Context) {
@@ -388,8 +366,6 @@ func getAccount(c *gin.Context) {
 	}
 
 	var player PlayerWithTasks
-
-	// Получаем solved_tasks
 	err := db.QueryRow(
 		"SELECT username, score, is_in_team, player_team_title, solved_tasks FROM users WHERE username = $1",
 		username,
@@ -397,24 +373,6 @@ func getAccount(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
 		return
-	}
-
-	// Получаем названия задач по id
-	if len(player.SolvedTasks) > 0 {
-		query := "SELECT title FROM tasks WHERE id = ANY($1)"
-		rows, err := db.Query(query, pq.Array(player.SolvedTasks))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch task titles"})
-			return
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var title string
-			if err := rows.Scan(&title); err == nil {
-				player.SolvedTaskTitles = append(player.SolvedTaskTitles, title)
-			}
-		}
 	}
 
 	c.JSON(http.StatusOK, player)
@@ -510,93 +468,69 @@ type FlagResponse struct {
 }
 
 func checkTaskFlag(c *gin.Context) {
-	// Получаем ID задачи из URL
 	taskID := c.Param("id")
 
-	// Привязываем JSON-запрос к структуре FlagRequest
 	var req FlagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("Invalid request")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	// Получаем флаг, вес и название задачи из базы данных
 	var taskFlag string
 	var taskWeight int
-	var taskTitle string
 	err := db.QueryRow(
-		"SELECT flag, weight, title FROM tasks WHERE id = $1",
+		"SELECT flag, weight FROM tasks WHERE id = $1",
 		taskID,
-	).Scan(&taskFlag, &taskWeight, &taskTitle)
+	).Scan(&taskFlag, &taskWeight)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("Task not found")
 			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 			return
 		}
-		log.Printf("Database error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
 
-	// Сравниваем флаг из запроса с флагом из базы данных
 	solved := req.Flag == taskFlag
 
-	// Если флаг верный и пользователь авторизован, обновляем его данные
 	if solved {
 		username, exists := c.Get("username")
 		if !exists {
-			log.Printf("User not authenticated")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 			return
 		}
 
-		// Получаем массив solved_tasks пользователя
+		// Получаем текущий список решенных задач (как массив строк)
 		var solvedTasks []string
 		err := db.QueryRow(
 			"SELECT solved_tasks FROM users WHERE username = $1",
 			username,
 		).Scan(pq.Array(&solvedTasks))
 		if err != nil {
-			log.Printf("Failed to fetch solved tasks: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch solved tasks"})
 			return
 		}
 
-		// Проверяем, решена ли задача уже
-		if contains(solvedTasks, taskTitle) {
-			log.Printf("Task already solved")
-			c.JSON(http.StatusOK, FlagResponse{
-				Solved: true,
-			})
-			return
+		// Проверяем, не решена ли уже эта задача
+		taskIDStr := taskID // Преобразуем ID задачи в строку
+		for _, t := range solvedTasks {
+			if t == taskIDStr {
+				c.JSON(http.StatusOK, FlagResponse{Solved: true})
+				return
+			}
 		}
 
-		// Добавляем title задачи в массив solved_tasks пользователя
+		// Добавляем ID задачи в массив solved_tasks
 		_, err = db.Exec(
-			"UPDATE users SET solved_tasks = array_append(solved_tasks, $1) WHERE username = $2",
-			taskTitle, username,
+			"UPDATE users SET solved_tasks = array_append(solved_tasks, $1), score = score + $2 WHERE username = $3",
+			taskIDStr, taskWeight, username,
 		)
 		if err != nil {
-			log.Printf("Failed to update solved tasks: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update solved tasks"})
-			return
-		}
-
-		// Прибавляем weight задачи к score пользователя
-		_, err = db.Exec(
-			"UPDATE users SET score = score + $1 WHERE username = $2",
-			taskWeight, username,
-		)
-		if err != nil {
-			log.Printf("Failed to update score: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update score"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user data"})
 			return
 		}
 	}
 
-	// Возвращаем результат
 	c.JSON(http.StatusOK, FlagResponse{
 		Solved: solved,
 	})
