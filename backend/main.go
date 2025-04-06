@@ -29,6 +29,7 @@ func main() {
 	// Маршруты
 	router.GET("/", getReadme)
 	router.POST("/login/", login)
+	router.POST("/logout/", logout)
 	router.POST("/signup/", signup)
 	router.GET("/tasks/", getTasks)
 	router.GET("/scoring-table/", getScoringTable)

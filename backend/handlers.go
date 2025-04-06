@@ -139,7 +139,7 @@ func login(c *gin.Context) {
 	tokenString, err := c.Cookie("jwt")
 	if err == nil && tokenString != "" {
 		// Если токен существует, вызываем logout
-		// logout(c)
+		logout(c)
 		c.SetCookie("jwt", "", -1, "/", "localhost", false, true)
 	}
 
@@ -310,6 +310,7 @@ func getScoringTable(c *gin.Context) {
 }
 
 func getTasks(c *gin.Context) {
+	// Получаем задачи из базы данных
 	rows, err := db.Query("SELECT id, title, description, weight, category FROM tasks WHERE active = true")
 	if err != nil {
 		log.Printf("Failed to fetch tasks: %v", err)
@@ -319,7 +320,25 @@ func getTasks(c *gin.Context) {
 	defer rows.Close()
 
 	var tasks []Task
+	var solvedTasks []string
 
+	// Проверяем авторизацию пользователя
+	username, isAuthenticated := c.Get("username")
+	if isAuthenticated {
+		// Получаем список решенных задач для авторизованного пользователя
+		err = db.QueryRow(
+			"SELECT solved_tasks FROM users WHERE username = $1",
+			username,
+		).Scan(pq.Array(&solvedTasks))
+
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Failed to fetch solved tasks: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch solved tasks"})
+			return
+		}
+	}
+
+	// Обрабатываем результаты запроса задач
 	for rows.Next() {
 		var task Task
 		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Weight, &task.Category); err != nil {
@@ -337,46 +356,67 @@ func getTasks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// Формируем ответ
+	response := gin.H{
 		"tasks": tasks,
-	})
+	}
+
+	// Добавляем solved_tasks в ответ, если пользователь авторизован
+	if isAuthenticated {
+		response["user"] = gin.H{
+			"solved_tasks": solvedTasks,
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
-type Player_account struct {
-	Username        string         `json:"username"`
-	Score           int            `json:"score"`
-	IsInTeam        bool           `json:"is_in_team"`
-	PlayerTeamTitle sql.NullString `json:"player_team_title"`
-	SolvedTasks     []string       `json:"solved_tasks"`
+type PlayerWithTasks struct {
+	Username         string   `json:"username"`
+	Score            int      `json:"score"`
+	IsInTeam         bool     `json:"is_in_team"`
+	PlayerTeamTitle  string   `json:"player_team_title"`
+	SolvedTasks      []int    `json:"solved_tasks"`       // id задач
+	SolvedTaskTitles []string `json:"solved_task_titles"` // названия задач
 }
 
 func getAccount(c *gin.Context) {
-	// Получаем имя пользователя из контекста (установлено в authMiddleware)
 	username, exists := c.Get("username")
 	if !exists {
-		log.Println("User not authenticated")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Получаем данные пользователя из базы данных
-	var player Player_account
+	var player PlayerWithTasks
+
+	// Получаем solved_tasks
 	err := db.QueryRow(
 		"SELECT username, score, is_in_team, player_team_title, solved_tasks FROM users WHERE username = $1",
 		username,
 	).Scan(&player.Username, &player.Score, &player.IsInTeam, &player.PlayerTeamTitle, pq.Array(&player.SolvedTasks))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			log.Printf("User not found: %s", username)
-			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		} else {
-			log.Printf("Failed to fetch user data: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
 		return
 	}
 
-	// Возвращаем данные пользователя
+	// Получаем названия задач по id
+	if len(player.SolvedTasks) > 0 {
+		query := "SELECT title FROM tasks WHERE id = ANY($1)"
+		rows, err := db.Query(query, pq.Array(player.SolvedTasks))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch task titles"})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var title string
+			if err := rows.Scan(&title); err == nil {
+				player.SolvedTaskTitles = append(player.SolvedTaskTitles, title)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, player)
 }
 

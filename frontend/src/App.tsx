@@ -1,12 +1,26 @@
-import NavigationBar from "./components/NavigationBarComponent"
-import { ToastContainer } from 'react-toastify';
+import { Route, Routes } from "react-router-dom";
+
+import IndexPage from "@/pages/index";
+import LoginPage from "@/pages/login";
+import AccountPage from "@/pages/account";
+import TasksPage from "@/pages/tasks";
+import ScoringTablePage from "@/pages/scoring-table";
+import SignupPage from "./pages/signup";
 
 
-export default function App() {
+function App() {
   return (
-    <div className='App' data-bs-theme="dark">
-      <NavigationBar/>
-      <ToastContainer />
-    </div>
+    <>
+      <Routes>
+        <Route element={<IndexPage />} path="/" />
+        <Route element={<SignupPage />} path="/signup" /> 
+        <Route element={<ScoringTablePage />} path="/scoring-table" />
+        <Route element={<TasksPage />} path="/tasks" />
+        <Route element={<AccountPage />} path="/account" />
+        <Route element={<LoginPage />} path="/login" />
+      </Routes>
+    </>
   );
 }
+
+export default App;
