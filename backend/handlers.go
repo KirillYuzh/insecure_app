@@ -365,17 +365,83 @@ func getAccount(c *gin.Context) {
 		return
 	}
 
-	var player PlayerWithTasks
-	err := db.QueryRow(
-		"SELECT username, score, is_in_team, player_team_title, solved_tasks FROM users WHERE username = $1",
+	// Определяем структуры
+	type UserData struct {
+		Username        string
+		Score           int
+		IsInTeam        bool
+		PlayerTeamTitle *string
+		SolvedTasks     []int
+	}
+
+	type Response struct {
+		Username         string   `json:"username"`
+		Score            int      `json:"score"`
+		IsInTeam         bool     `json:"is_in_team"`
+		PlayerTeamTitle  *string  `json:"player_team_title"`
+		SolvedTasks      []int    `json:"solved_tasks"`
+		SolvedTaskTitles []string `json:"solved_task_titles"`
+	}
+
+	var user UserData
+	err := db.QueryRow(`
+        SELECT username, score, is_in_team, player_team_title, solved_tasks 
+        FROM users 
+        WHERE username = $1`,
 		username,
-	).Scan(&player.Username, &player.Score, &player.IsInTeam, &player.PlayerTeamTitle, pq.Array(&player.SolvedTasks))
+	).Scan(&user.Username, &user.Score, &user.IsInTeam, &user.PlayerTeamTitle, pq.Array(&user.SolvedTasks))
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, player)
+	// Получаем названия задач (если есть решенные задачи)
+	taskTitles := make([]string, 0)
+	if len(user.SolvedTasks) > 0 {
+		rows, err := db.Query(`
+            SELECT title 
+            FROM tasks 
+            WHERE id = ANY($1) 
+            ORDER BY id`, // Сортировка для сохранения порядка
+			pq.Array(user.SolvedTasks),
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch task titles"})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var title string
+			if err := rows.Scan(&title); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read task title"})
+				return
+			}
+			taskTitles = append(taskTitles, title)
+		}
+
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing task titles"})
+			return
+		}
+	}
+
+	// Формируем ответ
+	response := Response{
+		Username:         user.Username,
+		Score:            user.Score,
+		IsInTeam:         user.IsInTeam,
+		PlayerTeamTitle:  user.PlayerTeamTitle,
+		SolvedTasks:      user.SolvedTasks,
+		SolvedTaskTitles: taskTitles,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Обработчик для добавления задачи

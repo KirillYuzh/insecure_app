@@ -7,7 +7,7 @@ import {
   Link,
   Spacer,
   Chip,
-} from '@nextui-org/react'; // Изменено с @heroui/react на @nextui-org/react
+} from '@nextui-org/react';
 import { api } from '@/components/api';
 import { useNavigate } from "react-router-dom";
 import player_avatar from "../assets/avatar-red.svg";
@@ -16,8 +16,8 @@ import DefaultLayout from '@/layouts/default';
 export type Player = {
   username: string;
   score: number;
-  is_in_team: boolean;
-  player_team_title: string;
+  is_in_team: boolean; 
+  player_team_title: string | null; 
   solved_tasks: number[];
   solved_task_titles: string[]; 
 };
@@ -33,9 +33,9 @@ const AccountComponent: React.FC = () => {
         const data = response.data;
         setPlayer({
           username: data.username,
-          score: data.score,
-          is_in_team: data.is_in_team,
-          player_team_title: data.player_team_title?.String || "",
+          score: data.score || 0,
+          is_in_team: data.is_in_team || false,
+          player_team_title: data.player_team_title || "",
           solved_tasks: data.solved_tasks || [],
           solved_task_titles: data.solved_task_titles || [],
         });
@@ -80,8 +80,8 @@ const AccountComponent: React.FC = () => {
       <div className="flex flex-col items-center">
         <Avatar 
           src={player_avatar}
-          size="lg" // Изменено с "xl" на "lg" (доступные размеры: sm, md, lg)
-          className="shadow-md w-40 h-40" // Ручное управление размером
+          size="lg" 
+          className="shadow-md w-40 h-40"
         />
         
         <Spacer y={4} />
@@ -144,7 +144,7 @@ const AccountComponent: React.FC = () => {
         <Button 
           color="primary" 
           variant="solid" 
-          onClick={handleEditProfile} // Изменено с onPress на onClick
+          onClick={handleEditProfile}
         >
           Edit Profile
         </Button>
