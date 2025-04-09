@@ -63,6 +63,14 @@ CREATE TABLE tasks (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE c_user_task_solutions (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    is_solved BOOLEAN NOT NULL DEFAULT FALSE,
+    solved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, task_id)
+);
+
 ----                       ФУНКЦИИ
 
 

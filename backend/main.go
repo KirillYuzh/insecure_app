@@ -65,6 +65,11 @@ func main() {
 	router.POST("/tasks/:id/flag", authMiddleware(), submitFlag)
 	router.POST("/tasks/:id/flag/", authMiddleware(), submitFlag)
 
+	router.GET("/create-task", authMiddleware())
+	router.GET("/create-task/", authMiddleware())
+	router.POST("/create-task", authMiddleware(), createTask)
+	router.POST("/create-task/", authMiddleware(), createTask)
+
 	// router.POST("/admin-panel-add-task", authMiddleware(), addTask)
 	// router.POST("/admin-panel-add-task/", authMiddleware(), addTask)
 

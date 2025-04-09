@@ -11,10 +11,21 @@ import DefaultLayout from "@/layouts/default";
 import { title } from "@/components/primitives";
 import { api } from "@/components/api";
 
-import type { Task, TasksResponse } from "../types/task";
-// import type { Task, TasksResponse } from "@/types/task";
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  weight: number;
+  category: string;
+  solved: boolean;
+  files?: Array<{
+    name: string;
+    url: string;
+  }>;
+}
+
 const categories = [
-  'web', 'pwn', 'reverse engineering', 'osint', 'cryptography', 'forensic', 'misc',
+  'web', 'pwn', 'reverse engineering', 'osint', 'cryptography', 'forensic', 'misc', 'solved'
 ] as const;
 
 export default function TasksPage() {
@@ -22,16 +33,23 @@ export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState<string[]>([...categories]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [solvedTasks, setSolvedTasks] = useState<string[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [flag, setFlag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  const solvedTaskSet = useMemo(() => new Set(solvedTasks), [solvedTasks]);
-
-  const isTaskSolved = (taskId: number) => solvedTaskSet.has(taskId.toString());
+  // Фильтруем задачи в зависимости от выбранных категорий
+  const filteredTasks = useMemo(() => {
+    const showSolved = visibleCategories.includes('solved');
+    const otherCategories = visibleCategories.filter(cat => cat !== 'solved');
+    
+    return tasks.filter(task => {
+      const categoryMatch = otherCategories.length === 0 || otherCategories.includes(task.category);
+      const solvedMatch = showSolved ? task.solved : true;
+      return categoryMatch && solvedMatch;
+    });
+  }, [tasks, visibleCategories]);
 
   const handleCardPress = (task: Task) => {
     setSelectedTask(task);
@@ -62,7 +80,14 @@ export default function TasksPage() {
           color: "success",
         });
 
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === selectedTask.id ? { ...task, solved: true } : task
+          )
+        );
+
         setFlag("");
+        onOpenChange();
       } else {
         addToast({
           title: "Error",
@@ -83,18 +108,19 @@ export default function TasksPage() {
   };
 
   useEffect(() => {
-    api.get<TasksResponse>('tasks/')
+    api.get<Task[]>('tasks/')
       .then((response) => {
-        const { tasks, user } = response.data;
-
+        const tasks = response.data;
+        
         const sortedTasks = tasks.sort((a: Task, b: Task) =>
-          a.category.localeCompare(b.category) || a.weight - b.weight
+          a.category.localeCompare(b.category) || b.weight - a.weight
         );
 
-        tasks.filter((task: Task) => visibleCategories.includes(task.category))
-        setAvailableCategories(Array.from(new Set(sortedTasks.map(task => task.category))));
-
-        setSolvedTasks(user?.solved_tasks ?? []);
+        setTasks(sortedTasks);
+        // Добавляем стандартные категории без 'solved'
+        setAvailableCategories([
+          ...Array.from(new Set(sortedTasks.map(task => task.category)))
+        ]);
       })
       .catch(error => {
         console.error('Error loading tasks:', error);
@@ -138,12 +164,30 @@ export default function TasksPage() {
           {/* Левая колонка с категориями */}
           <div className="sticky top-4 h-fit">
             <CheckboxGroup
-              label="Select categories"
+              label=""
               value={visibleCategories}
               onValueChange={setVisibleCategories}
               className="w-full"
             >
-              {categories.map(category => {
+              <div className="mb-4">
+                <p className="text-sm text-default-500 mb-2">Filter tasks:</p>
+                <Checkbox
+                  value="solved"
+                  classNames={{
+                    wrapper: visibleCategories.includes('solved')
+                      ? "bg-green-500 border-green-500"
+                      : "bg-gray-200 border-gray-200"
+                  }}
+                >
+                  <span className="font-semibold">Solved</span>
+                </Checkbox>
+              </div>
+              
+              <Divider className="my-2" />
+              
+              <p className="text-sm text-default-500 mb-2">Categories:</p>
+              
+              {categories.filter(c => c !== 'solved').map(category => {
                 const isAvailable = availableCategories.includes(category);
                 return (
                   <Checkbox
@@ -169,35 +213,38 @@ export default function TasksPage() {
 
           {/* Карточки задач */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {tasks
-              .filter(task => visibleCategories.includes(task.category))
-              .map(task => (
-                <Card
-                  key={task.id}
-                  isPressable
-                  onPress={() => handleCardPress(task)}
-                  className="h-[10rem] hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader className="flex-col items-start pb-0 pt-2 px-4">
+            {filteredTasks.map(task => (
+              <Card
+                key={task.id}
+                isPressable
+                onPress={() => handleCardPress(task)}
+                className="h-[10rem] hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="flex-col items-start pb-0 pt-2 px-4">
+                  <div className="flex justify-between w-full">
                     <p className="text-tiny uppercase font-bold text-default-500">{task.category}</p>
-                    <h4 className="font-bold text-large line-clamp-1">{task.title}</h4>
-                  </CardHeader>
-                  <CardBody className="px-4 py-2">
-                    <div className="flex flex-col h-full justify-between">
-                      <p className="text-sm text-default-500 line-clamp-2">{task.description}</p>
-                      <div className="flex justify-end">
-                        <span className={`font-bold text-lg px-3 py-1 rounded-full ${
-                          isTaskSolved(task.id)
-                            ? "text-success bg-success/10"
-                            : "text-primary bg-primary/10"
-                        }`}>
-                          {task.weight} pts
-                        </span>
-                      </div>
+                    {task.solved && (
+                      <Chip size="sm" color="success" variant="flat">Solved</Chip>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-large line-clamp-1">{task.title}</h4>
+                </CardHeader>
+                <CardBody className="px-4 py-2">
+                  <div className="flex flex-col h-full justify-between">
+                    <p className="text-sm text-default-500 line-clamp-2">{task.description}</p>
+                    <div className="flex justify-end">
+                      <span className={`font-bold text-lg px-3 py-1 rounded-full ${
+                        task.solved
+                          ? "text-success bg-success/10"
+                          : "text-primary bg-primary/10"
+                      }`}>
+                        {task.weight} pts
+                      </span>
                     </div>
-                  </CardBody>
-                </Card>
-              ))}
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
         </div>
 
@@ -216,13 +263,18 @@ export default function TasksPage() {
                     <ModalHeader className="flex flex-col gap-1">
                       <div className="flex justify-between items-center w-full">
                         <h2 className="text-2xl font-bold">{selectedTask.title}</h2>
+                        {selectedTask.solved && (
+                          <Chip color="success" variant="flat">Solved</Chip>
+                        )}
                       </div>
-                      <Chip color="primary" variant="flat">
-                        {selectedTask.weight} points
-                      </Chip>
-                      <Chip color="secondary" variant="flat">
-                        {selectedTask.category}
-                      </Chip>
+                      <div className="flex gap-2">
+                        <Chip color="primary" variant="flat">
+                          {selectedTask.weight} points
+                        </Chip>
+                        <Chip color="secondary" variant="flat">
+                          {selectedTask.category}
+                        </Chip>
+                      </div>
                     </ModalHeader>
                     <ModalBody>
                       <div className="whitespace-pre-line">
@@ -253,25 +305,27 @@ export default function TasksPage() {
 
                       <Divider className="my-4" />
 
-                      <form onSubmit={handleFlagSubmit} className="space-y-4">
-                        <Input
-                          type="text"
-                          label="Flag"
-                          placeholder="Enter your flag"
-                          value={flag}
-                          onChange={(e) => setFlag(e.target.value)}
-                          isRequired
-                          fullWidth
-                        />
-                        <Button
-                          type="submit"
-                          color="primary"
-                          fullWidth
-                          isLoading={isSubmitting}
-                        >
-                          Submit Flag
-                        </Button>
-                      </form>
+                      {!selectedTask.solved && (
+                        <form onSubmit={handleFlagSubmit} className="space-y-4">
+                          <Input
+                            type="text"
+                            label="Flag"
+                            placeholder="Enter your flag"
+                            value={flag}
+                            onChange={(e) => setFlag(e.target.value)}
+                            isRequired
+                            fullWidth
+                          />
+                          <Button
+                            type="submit"
+                            color="primary"
+                            fullWidth
+                            isLoading={isSubmitting}
+                          >
+                            Submit Flag
+                          </Button>
+                        </form>
+                      )}
                     </ModalBody>
                   </>
                 )}

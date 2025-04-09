@@ -319,12 +319,31 @@ func getScoringTable(c *gin.Context) {
 }
 
 func getTasks(c *gin.Context) {
-	rows, err := db.Query(`
-		SELECT id, title, description, weight, category, active
-		FROM tasks
-		WHERE active = true
-		ORDER BY weight DESC
-	`)
+	userID, exists := c.Get("user_id")
+
+	var rows *sql.Rows
+	var err error
+
+	if exists {
+		// Если пользователь аутентифицирован, делаем запрос с проверкой solved
+		rows, err = db.Query(`
+            SELECT t.id, t.title, t.description, t.weight, t.category, 
+                   COALESCE(uts.is_solved, false) as solved
+            FROM tasks t
+            LEFT JOIN user_task_solutions uts ON t.id = uts.task_id AND uts.user_id = $1
+            WHERE t.active = true
+            ORDER BY t.weight DESC
+        `, userID)
+	} else {
+		// Если пользователь не аутентифицирован, возвращаем все задачи с solved=false
+		rows, err = db.Query(`
+            SELECT id, title, description, weight, category, false as solved
+            FROM tasks
+            WHERE active = true
+            ORDER BY weight DESC
+        `)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load tasks"})
 		return
@@ -332,20 +351,27 @@ func getTasks(c *gin.Context) {
 	defer rows.Close()
 
 	type Task struct {
-		ID          int    `json:"id"`
+		ID          string `json:"id"`
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		Weight      int    `json:"weight"`
 		Category    string `json:"category"`
-		Active      bool   `json:"active"`
+		Solved      bool   `json:"solved"`
 	}
 
 	var tasks []Task
 	for rows.Next() {
 		var t Task
-		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Weight, &t.Category, &t.Active); err == nil {
-			tasks = append(tasks, t)
+		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Weight, &t.Category, &t.Solved); err != nil {
+			log.Printf("Error scanning task row: %v", err)
+			continue
 		}
+		tasks = append(tasks, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing tasks"})
+		return
 	}
 
 	c.JSON(http.StatusOK, tasks)
@@ -474,4 +500,59 @@ func submitFlag(c *gin.Context) {
 
 func adminOnlyRoute(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Welcome, admin!"})
+}
+
+func createTask(c *gin.Context) {
+	type TaskRequest struct {
+		Title       string `json:"title" binding:"required"`
+		Description string `json:"description" binding:"required"`
+		Weight      int    `json:"weight" binding:"required"`
+		Category    string `json:"category" binding:"required"`
+		Flag        string `json:"flag" binding:"required"`
+	}
+
+	var req TaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	// Получаем ID создателя из JWT
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Хешируем флаг
+	flagHash, err := bcrypt.GenerateFromPassword([]byte(req.Flag), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Flag hashing failed"})
+		return
+	}
+	// Вставляем задание в БД
+	var taskID string
+	err = db.QueryRow(`
+		INSERT INTO tasks (title, description, weight, category, flag_hash, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`,
+		strings.TrimSpace(req.Title),
+		strings.TrimSpace(req.Description),
+		req.Weight,
+		strings.TrimSpace(req.Category),
+		string(flagHash),
+		userID,
+	).Scan(&taskID)
+
+	if err != nil {
+		log.Printf("Failed to create task: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Task creation failed"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Task created successfully",
+		"task_id": taskID,
+	})
 }

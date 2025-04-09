@@ -6,6 +6,7 @@ import AccountPage from "@/pages/account";
 import TasksPage from "@/pages/tasks";
 import ScoringTablePage from "@/pages/scoring-table";
 import SignupPage from "./pages/signup";
+import CreateTaskPage from "./pages/create-task";
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route element={<TasksPage />} path="/tasks" />
         <Route element={<AccountPage />} path="/account" />
         <Route element={<LoginPage />} path="/login" />
+        <Route element={<CreateTaskPage />} path="/create-task" />
       </Routes>
     </>
   );
