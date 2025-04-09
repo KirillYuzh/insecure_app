@@ -27,7 +27,7 @@ func main() {
 	}))
 
 	// Маршруты
-	router.GET("/", getReadme)
+	router.GET("/")
 	router.POST("/login", login)
 	router.POST("/login/", login)
 
@@ -46,11 +46,11 @@ func main() {
 	router.GET("/account", authMiddleware(), getAccount)
 	router.GET("/account/", authMiddleware(), getAccount)
 
-	router.GET("/all-tasks", authMiddleware(), getAllTasks)
-	router.GET("/all-tasks/", authMiddleware(), getAllTasks)
+	router.GET("/all-tasks", authMiddleware(), getTasks)
+	router.GET("/all-tasks/", authMiddleware(), getTasks)
 
-	router.PATCH("/tasks/:id", updateTaskActive)
-	router.PATCH("/tasks/:id/", updateTaskActive)
+	// router.PATCH("/tasks/:id", updateTaskActive)
+	// router.PATCH("/tasks/:id/", updateTaskActive)
 
 	router.OPTIONS("/tasks/:id", func(c *gin.Context) {
 		c.Status(http.StatusNoContent)
@@ -59,17 +59,17 @@ func main() {
 		c.Status(http.StatusNoContent)
 	})
 
-	router.GET("/tasks/:id", getTask)
-	router.GET("/tasks/:id/", getTask)
+	// router.GET("/tasks/:id", getTask)
+	// router.GET("/tasks/:id/", getTask)
 
-	router.POST("/tasks/:id/flag", authMiddleware(), checkTaskFlag)
-	router.POST("/tasks/:id/flag/", authMiddleware(), checkTaskFlag)
+	router.POST("/tasks/:id/flag", authMiddleware(), submitFlag)
+	router.POST("/tasks/:id/flag/", authMiddleware(), submitFlag)
 
-	router.POST("/admin-panel-add-task", authMiddleware(), addTask)
-	router.POST("/admin-panel-add-task/", authMiddleware(), addTask)
+	// router.POST("/admin-panel-add-task", authMiddleware(), addTask)
+	// router.POST("/admin-panel-add-task/", authMiddleware(), addTask)
 
-	router.GET("/community", getAllTeams)
-	router.GET("/community/", getAllTeams)
+	// router.GET("/community", getAllTeams)
+	// router.GET("/community/", getAllTeams)
 
 	// Запуск сервера
 	if err := router.Run("localhost:8080"); err != nil {

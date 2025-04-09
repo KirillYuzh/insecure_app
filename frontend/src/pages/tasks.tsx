@@ -1,49 +1,37 @@
-import { 
-  Card, 
-  CardHeader, 
-  CardBody, 
-  Checkbox, 
-  CheckboxGroup,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  Input,
-  Button,
-  Chip,
-  Divider,
-  Link,
-  useDisclosure
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Card, CardHeader, CardBody, Checkbox, CheckboxGroup,
+  Modal, ModalContent, ModalHeader, ModalBody,
+  Input, Button, Chip, Divider, Link, useDisclosure
 } from "@nextui-org/react";
 import confetti from 'canvas-confetti';
-import { title } from "@/components/primitives";
-import DefaultLayout from "@/layouts/default";
-import { useEffect, useState } from 'react';
-import { api } from "@/components/api";
 import { addToast } from "@heroui/react";
 
-export type Task = {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  weight: number;
-  files?: { url: string; name: string }[]; // Добавлено поле для файлов
-};
+import DefaultLayout from "@/layouts/default";
+import { title } from "@/components/primitives";
+import { api } from "@/components/api";
 
+import type { Task, TasksResponse } from "../types/task";
+// import type { Task, TasksResponse } from "@/types/task";
 const categories = [
-  'web', 'pwn', 'reverse engineering', 'osint', 'cryptography', 'forensic', 'misc'
-];
+  'web', 'pwn', 'reverse engineering', 'osint', 'cryptography', 'forensic', 'misc',
+] as const;
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleCategories, setVisibleCategories] = useState<string[]>(categories);
+  const [visibleCategories, setVisibleCategories] = useState<string[]>([...categories]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [solvedTasks, setSolvedTasks] = useState<string[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [flag, setFlag] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  const solvedTaskSet = useMemo(() => new Set(solvedTasks), [solvedTasks]);
+
+  const isTaskSolved = (taskId: number) => solvedTaskSet.has(taskId.toString());
 
   const handleCardPress = (task: Task) => {
     setSelectedTask(task);
@@ -53,28 +41,27 @@ export default function TasksPage() {
   const handleFlagSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) return;
-  
+    setIsSubmitting(true);
+
     try {
       const result = await api.post<{ solved: boolean }>(
         `/tasks/${selectedTask.id}/flag/`,
-        { flag: flag }
+        { flag }
       );
-  
+
       if (result.data.solved) {
-        // Конфетти!
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 },
         });
-  
+
         addToast({
           title: "Success",
           description: "Task solved!",
           color: "success",
         });
-  
-        // Очищаем флаг
+
         setFlag("");
       } else {
         addToast({
@@ -90,21 +77,24 @@ export default function TasksPage() {
         description: "Failed to submit flag",
         color: "danger",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
-    api.get('tasks/')
+    api.get<TasksResponse>('tasks/')
       .then((response) => {
-        const sortedTasks = response.data.tasks.sort((a: Task, b: Task) => 
+        const { tasks, user } = response.data;
+
+        const sortedTasks = tasks.sort((a: Task, b: Task) =>
           a.category.localeCompare(b.category) || a.weight - b.weight
         );
-        setTasks(sortedTasks);
-        setAvailableCategories(Array.from(new Set(sortedTasks.map((task: { category: any; }) => task.category))));
-        
-        if (response.data.user) {
-          setSolvedTasks(response.data.user.solved_tasks || []);
-        }
+
+        tasks.filter((task: Task) => visibleCategories.includes(task.category))
+        setAvailableCategories(Array.from(new Set(sortedTasks.map(task => task.category))));
+
+        setSolvedTasks(user?.solved_tasks ?? []);
       })
       .catch(error => {
         console.error('Error loading tasks:', error);
@@ -117,15 +107,11 @@ export default function TasksPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const isTaskSolved = (taskId: number) => {
-    return solvedTasks.includes(taskId.toString());
-  };
-
   if (isLoading) {
     return (
       <DefaultLayout>
         <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-          <div>Loading...</div>
+          <h6>Loading...</h6>
         </section>
       </DefaultLayout>
     );
@@ -144,8 +130,10 @@ export default function TasksPage() {
   return (
     <DefaultLayout>
       <section className="flex flex-col items-center gap-4 py-8 md:py-10 px-4">
-        <h1 className={title()} style={{ marginBottom: 'auto', marginTop: 'auto', height: '7rem'}}>Tasks</h1>
-        
+        <h1 className={title()} style={{ marginBottom: 'auto', marginTop: 'auto', height: '7rem' }}>
+          Tasks
+        </h1>
+
         <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[fit-content(200px)_1fr] gap-6">
           {/* Левая колонка с категориями */}
           <div className="sticky top-4 h-fit">
@@ -165,8 +153,8 @@ export default function TasksPage() {
                     classNames={{
                       base: isAvailable ? "" : "opacity-50",
                       label: isAvailable ? "" : "text-default-500",
-                      wrapper: visibleCategories.includes(category) 
-                        ? "bg-purple-500 border-purple-500" 
+                      wrapper: visibleCategories.includes(category)
+                        ? "bg-purple-500 border-purple-500"
                         : "bg-gray-200 border-gray-200"
                     }}
                   >
@@ -184,7 +172,7 @@ export default function TasksPage() {
             {tasks
               .filter(task => visibleCategories.includes(task.category))
               .map(task => (
-                <Card 
+                <Card
                   key={task.id}
                   isPressable
                   onPress={() => handleCardPress(task)}
@@ -199,8 +187,8 @@ export default function TasksPage() {
                       <p className="text-sm text-default-500 line-clamp-2">{task.description}</p>
                       <div className="flex justify-end">
                         <span className={`font-bold text-lg px-3 py-1 rounded-full ${
-                          isTaskSolved(task.id) 
-                            ? "text-success bg-success/10" 
+                          isTaskSolved(task.id)
+                            ? "text-success bg-success/10"
                             : "text-primary bg-primary/10"
                         }`}>
                           {task.weight} pts
@@ -214,14 +202,14 @@ export default function TasksPage() {
         </div>
 
         {/* Модальное окно задачи */}
-        <Modal 
-          isOpen={isOpen} 
+        <Modal
+          isOpen={isOpen}
           onOpenChange={onOpenChange}
           size="3xl"
           scrollBehavior="inside"
         >
           <ModalContent>
-            {(onClose) => (
+            {() => (
               <>
                 {selectedTask && (
                   <>
@@ -233,7 +221,7 @@ export default function TasksPage() {
                         {selectedTask.weight} points
                       </Chip>
                       <Chip color="secondary" variant="flat">
-                          {selectedTask.category}
+                        {selectedTask.category}
                       </Chip>
                     </ModalHeader>
                     <ModalBody>
@@ -248,7 +236,7 @@ export default function TasksPage() {
                             <h4 className="font-bold mb-2">Files:</h4>
                             <div className="space-y-2">
                               {selectedTask.files.map((file, index) => (
-                                <Link 
+                                <Link
                                   key={index}
                                   href={file.url}
                                   isExternal
@@ -275,11 +263,11 @@ export default function TasksPage() {
                           isRequired
                           fullWidth
                         />
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           color="primary"
-                          onSubmit={handleFlagSubmit}
                           fullWidth
+                          isLoading={isSubmitting}
                         >
                           Submit Flag
                         </Button>

@@ -8,12 +8,12 @@ import { login } from "@/components/api";
 
 
 type LoginFormData = {
-  username: string;
+  email: string;
   password: string;
 };
 
 type LoginFormErrors = {
-  username?: string;
+  email?: string;
   password?: string;
   [key: string]: string | undefined;
 };
@@ -29,13 +29,13 @@ export default function LoginPage() {
 
     const formData = new FormData(e.currentTarget);
     const data: LoginFormData = {
-      username: formData.get('username') as string,
+      email: formData.get('email') as string,
       password: formData.get('password') as string,
     };
 
     // Basic client-side validation
     const newErrors: LoginFormErrors = {};
-    if (!data.username) newErrors.username = "Username is required";
+    if (!data.email) newErrors.email = "email is required";
     if (!data.password) newErrors.password = "Password is required";
 
     if (Object.keys(newErrors).length > 0) {
@@ -45,7 +45,8 @@ export default function LoginPage() {
     }
 
     try {
-      await login(data.username, data.password);
+      console.log(data);
+      await login(data.email, data.password);
     } catch (error: any) {
       let errorMessage = "Login failed";
       
@@ -78,19 +79,18 @@ export default function LoginPage() {
         className="w-full justify-center items-center space-y-4"
         onReset={() => setErrors({})}
         onSubmit={onSubmit}
-        style={{ marginTop: '20vh', marginBottom: 'auto' }}
       >
         <div className="flex flex-col gap-4 max-w-md">
           <h1 className="text-2xl font-bold text-center">Log in</h1>
 
           <Input
             isRequired
-            errorMessage={errors.username}
-            isInvalid={!!errors.username}
-            label="Username"
+            errorMessage={errors.email}
+            isInvalid={!!errors.email}
+            label="Email"
             labelPlacement="outside"
-            name="username"
-            placeholder="Enter your username"
+            name="email"
+            placeholder="Enter your email"
           />
 
           <Input

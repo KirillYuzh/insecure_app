@@ -4,39 +4,31 @@ const API_URL = "http://localhost:8080/";
 
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // Включаем отправку кук
+  withCredentials: true,
 });
 
-// Логин
-export const login = async (username: string, password: string) => {
-  try {
-    await api.post(
-      'login',
-      { username, password },
-      { withCredentials: true }
-    );
-  } catch (error) {
-    console.error("Login failed", error);
+// Добавляем интерцептор для обработки ошибок
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      return Promise.reject(error.response.data.error || "Request failed");
+    }
+    return Promise.reject("Network error");
   }
+);
+
+export const login = async (email: string, password: string) => {
+  const response = await api.post('login', { email, password });
+  return response.data;
 }
 
 export const logout = async () => {
-  try {
-    await api.post('logout', {}, { withCredentials: true });
-  } catch (error) {
-    console.error("Logout failed", error);
-  }
+  await api.post('logout');
+  // Дополнительная очистка на фронтенде
 }
 
 export const signup = async (username: string, email: string, name: string, password: string) => {
-  try {
-    await api.post(
-      'signup',
-      { username, email, name, password },
-      { withCredentials: true }
-    );
-  } catch (error) {
-    console.error("Signup failed", error);
-    throw error;
-  }
+  const response = await api.post('signup', { username, email, name, password });
+  return response.data;
 }

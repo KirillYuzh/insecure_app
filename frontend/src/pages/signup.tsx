@@ -6,13 +6,11 @@ import { siteConfig } from "@/config/site";
 import { signup } from "@/components/api";
 import { addToast } from "@heroui/react";
 
-
 type FormData = {
   username: string;
   email: string;
   name: string;
   password: string;
-  terms: boolean;
 };
 
 type FormErrors = {
@@ -20,7 +18,6 @@ type FormErrors = {
   email?: string;
   name?: string;
   password?: string;
-  terms?: string;
   [key: string]: string | undefined;
 };
 
@@ -46,7 +43,6 @@ export default function SignupPage() {
       email: formData.get('email') as string,
       name: formData.get('name') as string,
       password: formData.get('password') as string,
-      terms: formData.get('terms') === 'true'
     };
 
     // Валидация
@@ -57,7 +53,6 @@ export default function SignupPage() {
     
     const passwordError = getPasswordError(data.password);
     if (passwordError) newErrors.password = passwordError;
-    if (!data.terms) newErrors.terms = "Please accept the terms";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -66,6 +61,7 @@ export default function SignupPage() {
     }
 
     try {
+      console.log(data);
       await signup(data.username, data.email, data.name, data.password);
       
       addToast({
@@ -105,91 +101,78 @@ export default function SignupPage() {
 
   return (
     <DefaultLayout>
-      <Form
-        className="w-full justify-center items-center space-y-4"
-        onReset={() => setErrors({})}
-        onSubmit={handleSubmit}
-        style={{ marginTop: '20vh', marginBottom: 'auto' }}
-      >
-        <div className="flex flex-col gap-4 max-w-md">
-          <h1 className="text-2xl font-bold text-center">Sign up</h1>
+        <Form
+          className="w-full justify-center items-center space-y-4"
+          onReset={() => setErrors({})}
+          onSubmit={handleSubmit}
+        >
+          <div className="flex flex-col gap-4">
+            <h1 className="text-2xl font-bold text-center">Sign up</h1>
 
-          <Input
-            isRequired
-            errorMessage={errors.username}
-            isInvalid={!!errors.username}
-            label="Username"
-            labelPlacement="outside"
-            name="username"
-            placeholder="Enter your username"
-          />
-
-          <Input
-            isRequired
-            errorMessage={errors.name}
-            isInvalid={!!errors.name}
-            label="Name"
-            labelPlacement="outside"
-            name="name"
-            placeholder="Enter your name"
-          />
-
-          <Input
-            isRequired
-            errorMessage={errors.email}
-            isInvalid={!!errors.email}
-            label="Email"
-            labelPlacement="outside"
-            name="email"
-            placeholder="Enter your email"
-            type="email"
-          />
-
-          <Input
-            isRequired
-            errorMessage={errors.password}
-            isInvalid={!!errors.password}
-            label="Password"
-            labelPlacement="outside"
-            name="password"
-            placeholder="Enter your password"
-            type="password"
-            value={password}
-            onValueChange={setPassword}
-          />
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="terms"
-              name="terms"
-              value="true"
-              className="mr-2"
+            <Input
+              isRequired
+              errorMessage={errors.username}
+              isInvalid={!!errors.username}
+              label="Username"
+              labelPlacement="outside"
+              name="username"
+              placeholder="Enter your username"
             />
-            <label htmlFor="terms">I accept the terms and conditions</label>
-            {errors.terms && <span className="text-danger text-small ml-2">{errors.terms}</span>}
-          </div>
 
-          <div className="flex gap-4 pt-2">
-            <Button 
-              className="w-full" 
-              color="primary" 
-              type="submit"
-              isLoading={isSubmitting}
-            >
-              Sign Up
-            </Button>
-            <Button type="reset" variant="bordered">
-              Reset
-            </Button>
-          </div>
+            <Input
+              isRequired
+              errorMessage={errors.name}
+              isInvalid={!!errors.name}
+              label="Name"
+              labelPlacement="outside"
+              name="name"
+              placeholder="Enter your name"
+            />
 
-          <div className="text-center text-small">
-            Already have an account?{' '}
-            <Link href={siteConfig.links.login}>Log in</Link>
+            <Input
+              isRequired
+              errorMessage={errors.email}
+              isInvalid={!!errors.email}
+              label="Email"
+              labelPlacement="outside"
+              name="email"
+              placeholder="Enter your email"
+              type="email"
+            />
+
+            <Input
+              isRequired
+              errorMessage={errors.password}
+              isInvalid={!!errors.password}
+              label="Password"
+              labelPlacement="outside"
+              name="password"
+              placeholder="Enter your password"
+              type="password"
+              value={password}
+              onValueChange={setPassword}
+            />
+
+            <div className="flex gap-4 pt-2">
+              <Button 
+                className="w-full" 
+                color="primary" 
+                type="submit"
+                isLoading={isSubmitting}
+              >
+                Sign Up
+              </Button>
+              <Button type="reset" variant="bordered">
+                Reset
+              </Button>
+            </div>
+
+            <div className="text-center text-small">
+              Already have an account?{' '}
+              <Link href={siteConfig.links.login}>Log in</Link>
+            </div>
           </div>
-        </div>
-      </Form>
+        </Form>
     </DefaultLayout>
   );
 }

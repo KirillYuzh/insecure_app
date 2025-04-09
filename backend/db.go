@@ -10,7 +10,7 @@ import (
 
 func initDB() {
 	var err error
-	connStr := "user=kirill dbname=postgres sslmode=disable port=5454 password=kirill"
+	connStr := "user=db_owner dbname=postgres sslmode=disable port=5454 password=db_owner"
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Ошибка при подключении к базе данных: %v", err)
