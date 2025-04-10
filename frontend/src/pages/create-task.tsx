@@ -23,8 +23,10 @@ type TaskFormErrors = {
 
 const categories = [
   { label: "Web", value: "web" },
-  { label: "Crypto", value: "crypto" },
-  { label: "Reverse", value: "reverse" },
+  { label: "Pwn", value: "pwn" },
+  { label: "Osint", value: "osint" },
+  { label: "Cryptography", value: "cryptography" },
+  { label: "R-Engineering", value: "reverse engineering" },
   { label: "Forensics", value: "forensics" },
   { label: "Misc", value: "misc" },
 ];

@@ -25,10 +25,14 @@ export const login = async (email: string, password: string) => {
 
 export const logout = async () => {
   await api.post('logout');
-  // Дополнительная очистка на фронтенде
 }
 
 export const signup = async (username: string, email: string, name: string, password: string) => {
   const response = await api.post('signup', { username, email, name, password });
+  return response.data;
+}
+
+export const submit_flag = async (task_id: string, flag: string) => {
+  const response = await api.post('tasks/flag/', { task_id, flag });
   return response.data;
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"log"
-	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -37,8 +36,8 @@ func main() {
 	router.POST("/signup", signup)
 	router.POST("/signup/", signup)
 
-	router.GET("/tasks", getTasks)
-	router.GET("/tasks/", getTasks)
+	router.GET("/tasks", authMiddleware(), getTasks)
+	router.GET("/tasks/", authMiddleware(), getTasks)
 
 	router.GET("/scoring-table", getScoringTable)
 	router.GET("/scoring-table/", getScoringTable)
@@ -49,21 +48,15 @@ func main() {
 	router.GET("/all-tasks", authMiddleware(), getTasks)
 	router.GET("/all-tasks/", authMiddleware(), getTasks)
 
-	// router.PATCH("/tasks/:id", updateTaskActive)
-	// router.PATCH("/tasks/:id/", updateTaskActive)
+	// router.OPTIONS("/tasks/:id", func(c *gin.Context) {
+	// 	c.Status(http.StatusNoContent)
+	// })
+	// router.OPTIONS("/tasks/:id/", func(c *gin.Context) {
+	// 	c.Status(http.StatusNoContent)
+	// })
 
-	router.OPTIONS("/tasks/:id", func(c *gin.Context) {
-		c.Status(http.StatusNoContent)
-	})
-	router.OPTIONS("/tasks/:id/", func(c *gin.Context) {
-		c.Status(http.StatusNoContent)
-	})
-
-	// router.GET("/tasks/:id", getTask)
-	// router.GET("/tasks/:id/", getTask)
-
-	router.POST("/tasks/:id/flag", authMiddleware(), submitFlag)
-	router.POST("/tasks/:id/flag/", authMiddleware(), submitFlag)
+	router.POST("/tasks/flag", authMiddleware(), submitFlag)
+	router.POST("/tasks/flag/", authMiddleware(), submitFlag)
 
 	router.GET("/create-task", authMiddleware())
 	router.GET("/create-task/", authMiddleware())

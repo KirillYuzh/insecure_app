@@ -9,7 +9,7 @@ import { addToast } from "@heroui/react";
 
 import DefaultLayout from "@/layouts/default";
 import { title } from "@/components/primitives";
-import { api } from "@/components/api";
+import { api, submit_flag } from '@/components/api';
 
 interface Task {
   id: string;
@@ -35,6 +35,7 @@ export default function TasksPage() {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [flag, setFlag] = useState("");
+  // const [task_id, setTaskID] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -62,12 +63,10 @@ export default function TasksPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await api.post<{ solved: boolean }>(
-        `/tasks/${selectedTask.id}/flag/`,
-        { flag }
-      );
+      var task_id = selectedTask.id
+      var result = await submit_flag(task_id, flag)
 
-      if (result.data.solved) {
+      if (result.data == "Correct flag!") {
         confetti({
           particleCount: 100,
           spread: 70,
@@ -221,23 +220,24 @@ export default function TasksPage() {
                 className="h-[10rem] hover:shadow-lg transition-shadow"
               >
                 <CardHeader className="flex-col items-start pb-0 pt-2 px-4">
-                  <div className="flex justify-between w-full">
-                    <p className="text-tiny uppercase font-bold text-default-500">{task.category}</p>
-                    {task.solved && (
-                      <Chip size="sm" color="success" variant="flat">Solved</Chip>
-                    )}
+                  <div className="flex justify-between items-center w-full">
+                    <h2 className="text-2xl font-bold" style={{ margin: '1rem', marginLeft: '0rem' }}>
+                      {task.title}
+                    </h2>
+                    <div className="flex gap-2">
+                      {task.solved && (
+                        <Chip color="success" variant="flat">solved</Chip>
+                      )}
+                      <Chip color="secondary" variant="flat">{task.category}</Chip>
+                    </div>
                   </div>
-                  <h4 className="font-bold text-large line-clamp-1">{task.title}</h4>
                 </CardHeader>
                 <CardBody className="px-4 py-2">
                   <div className="flex flex-col h-full justify-between">
                     <p className="text-sm text-default-500 line-clamp-2">{task.description}</p>
-                    <div className="flex justify-end">
-                      <span className={`font-bold text-lg px-3 py-1 rounded-full ${
-                        task.solved
-                          ? "text-success bg-success/10"
-                          : "text-primary bg-primary/10"
-                      }`}>
+                    <div className="flex justify-end" style={{ gap: '0.5rem' }}>
+                      <span className={`font-bold text-lg px-3 py-1 rounded-full text-primary bg-primary/10`}
+                      style={{ marginBottom: '0.5rem' }}>
                         {task.weight} pts
                       </span>
                     </div>
@@ -262,9 +262,9 @@ export default function TasksPage() {
                   <>
                     <ModalHeader className="flex flex-col gap-1">
                       <div className="flex justify-between items-center w-full">
-                        <h2 className="text-2xl font-bold">{selectedTask.title}</h2>
+                        <h2 className="text-2xl font-bold" style={{ margin: '1rem', marginLeft: '0rem' }}>{selectedTask.title}</h2>
                         {selectedTask.solved && (
-                          <Chip color="success" variant="flat">Solved</Chip>
+                          <Chip color="success" variant="flat">solved</Chip>
                         )}
                       </div>
                       <div className="flex gap-2">
@@ -321,6 +321,7 @@ export default function TasksPage() {
                             color="primary"
                             fullWidth
                             isLoading={isSubmitting}
+                            style={{ marginBottom: '0.5rem' }}
                           >
                             Submit Flag
                           </Button>

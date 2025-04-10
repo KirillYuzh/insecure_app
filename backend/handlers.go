@@ -319,36 +319,52 @@ func getScoringTable(c *gin.Context) {
 }
 
 func getTasks(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-
-	var rows *sql.Rows
-	var err error
-
-	if exists {
-		// Если пользователь аутентифицирован, делаем запрос с проверкой solved
-		rows, err = db.Query(`
-            SELECT t.id, t.title, t.description, t.weight, t.category, 
-                   COALESCE(uts.is_solved, false) as solved
-            FROM tasks t
-            LEFT JOIN user_task_solutions uts ON t.id = uts.task_id AND uts.user_id = $1
-            WHERE t.active = true
-            ORDER BY t.weight DESC
-        `, userID)
-	} else {
-		// Если пользователь не аутентифицирован, возвращаем все задачи с solved=false
-		rows, err = db.Query(`
-            SELECT id, title, description, weight, category, false as solved
-            FROM tasks
-            WHERE active = true
-            ORDER BY weight DESC
-        `)
+	// Получаем JWT токен из куки
+	tokenString, err := c.Cookie("jwt")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+		return
 	}
 
+	// Парсим токен
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Проверяем алгоритм подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil // Замените на ваш секретный ключ
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Извлекаем claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
+	}
+
+	// Получаем user_id из claims
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid user ID in token",
+		})
+		return
+	}
+
+	// Получаем все активные задачи
+	taskRows, err := db.Query(`
+        SELECT id FROM tasks WHERE active = true ORDER BY weight DESC
+    `)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load tasks"})
 		return
 	}
-	defer rows.Close()
+	defer taskRows.Close()
 
 	type Task struct {
 		ID          string `json:"id"`
@@ -360,16 +376,40 @@ func getTasks(c *gin.Context) {
 	}
 
 	var tasks []Task
-	for rows.Next() {
-		var t Task
-		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Weight, &t.Category, &t.Solved); err != nil {
-			log.Printf("Error scanning task row: %v", err)
+
+	for taskRows.Next() {
+		var taskID string
+		if err := taskRows.Scan(&taskID); err != nil {
+			log.Printf("Error scanning task ID: %v", err)
 			continue
 		}
+
+		// Получаем основные данные задачи
+		var t Task
+		err := db.QueryRow(`
+            SELECT title, description, category, weight 
+            FROM get_task_by_task_id($1)
+        `, taskID).Scan(&t.Title, &t.Description, &t.Category, &t.Weight)
+
+		if err != nil {
+			log.Printf("Error getting task details: %v", err)
+			continue
+		}
+		t.ID = taskID
+
+		err = db.QueryRow(`
+			SELECT check_task_solution_by_user_id_by_task_id($1, $2)
+		`, userID, taskID).Scan(&t.Solved)
+
+		if err != nil {
+			log.Printf("Error checking task solution: %v", err)
+			t.Solved = false
+		}
+
 		tasks = append(tasks, t)
 	}
 
-	if err = rows.Err(); err != nil {
+	if err = taskRows.Err(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing tasks"})
 		return
 	}
@@ -471,30 +511,75 @@ func requireRole(requiredRole string) gin.HandlerFunc {
 }
 
 func submitFlag(c *gin.Context) {
-	type FlagPayload struct {
-		TaskID int    `json:"task_id"`
+	type SubmitFlagRequest struct {
+		TaskID string `json:"task_id"`
 		Flag   string `json:"flag"`
 	}
-	var payload FlagPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+
+	var req SubmitFlagRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
 		return
 	}
 
 	var storedHash string
-	err := db.QueryRow("SELECT get_task_flag_hash_by_id($1)", payload.TaskID).Scan(&storedHash)
+	log.Print(req.TaskID)
+	err := db.QueryRow("SELECT get_task_flag_hash_by_id($1)", req.TaskID).Scan(&storedHash)
 	if err != nil {
+		log.Print(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(payload.Flag)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(req.Flag)) != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"result": "Incorrect flag"})
 		return
 	}
 
-	// userID := c.GetInt("user_id")
-	// TODO: mark task as solved for user/team
+	// Получаем JWT токен из куки
+	tokenString, err := c.Cookie("jwt")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+		return
+	}
+
+	// Парсим токен
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Проверяем алгоритм подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil // Замените на ваш секретный ключ
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Извлекаем claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
+	}
+
+	// Получаем user_id из claims
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid user ID in token",
+		})
+		return
+	}
+
+	err = db.QueryRow(`SELECT submit_task_by_user_id_by_task_id($1, $2)`, userID, req.TaskID).Scan(&userID)
+
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"result": "Correct flag!"})
 }
 
