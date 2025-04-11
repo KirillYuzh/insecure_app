@@ -58,10 +58,10 @@ func main() {
 	router.POST("/tasks/flag", authMiddleware(), submitFlag)
 	router.POST("/tasks/flag/", authMiddleware(), submitFlag)
 
-	router.GET("/create-task", authMiddleware())
-	router.GET("/create-task/", authMiddleware())
-	router.POST("/create-task", authMiddleware(), createTask)
-	router.POST("/create-task/", authMiddleware(), createTask)
+	router.GET("/create-task", authMiddleware(), RequireRole("admin"))
+	router.GET("/create-task/", authMiddleware(), RequireRole("admin"))
+	router.POST("/create-task", authMiddleware(), RequireRole("admin"), createTask)
+	router.POST("/create-task/", authMiddleware(), RequireRole("admin"), createTask)
 
 	// router.POST("/admin-panel-add-task", authMiddleware(), addTask)
 	// router.POST("/admin-panel-add-task/", authMiddleware(), addTask)

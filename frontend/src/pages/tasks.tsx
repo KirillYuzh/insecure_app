@@ -178,7 +178,7 @@ export default function TasksPage() {
                       : "bg-gray-200 border-gray-200"
                   }}
                 >
-                  <span className="font-semibold">Solved</span>
+                  <span className="font-semibold">solved</span>
                 </Checkbox>
               </div>
               
@@ -234,7 +234,12 @@ export default function TasksPage() {
                 </CardHeader>
                 <CardBody className="px-4 py-2">
                   <div className="flex flex-col h-full justify-between">
-                    <p className="text-sm text-default-500 line-clamp-2">{task.description}</p>
+                  <p className="text-sm text-default-500 line-clamp-2">
+                    {task.description.length > 30 
+                      ? `${task.description.substring(0, 30)}...` 
+                      : task.description
+                    }
+                  </p>
                     <div className="flex justify-end" style={{ gap: '0.5rem' }}>
                       <span className={`font-bold text-lg px-3 py-1 rounded-full text-primary bg-primary/10`}
                       style={{ marginBottom: '0.5rem' }}>

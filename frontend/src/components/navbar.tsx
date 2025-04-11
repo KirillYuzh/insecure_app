@@ -53,8 +53,8 @@ export const Navbar = () => {
             color="foreground"
             href="/"
           >
-            <Logo />
-            <p className="font-bold text-inherit">Insecure app</p>
+            {/* <Logo /> */}
+            <h2 className="font-bold text-inherit">INSECURE APP</h2>
           </Link>
         </NavbarBrand>
         <div className="hidden lg:flex gap-4 justify-start ml-2">

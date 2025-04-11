@@ -266,9 +266,14 @@ func getAccount(c *gin.Context) {
 
 func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.GetInt("user_id")
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			c.Abort()
+			return
+		}
 
-		role, err := getUserRoleByID(db, fmt.Sprintf("%d", userID))
+		role, err := getUserRoleByID(db, fmt.Sprintf("%v", userID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not determine role"})
 			c.Abort()
