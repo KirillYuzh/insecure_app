@@ -7,7 +7,7 @@ import TasksPage from "@/pages/tasks";
 import ScoringTablePage from "@/pages/scoring-table";
 import SignupPage from "./pages/signup";
 import CreateTaskPage from "./pages/create-task";
-
+import Test from "./pages/test"
 
 function App() {
   return (
@@ -20,6 +20,7 @@ function App() {
         <Route element={<AccountPage />} path="/account" />
         <Route element={<LoginPage />} path="/login" />
         <Route element={<CreateTaskPage />} path="/create-task" />
+        <Route element={<Test />} path="/test" />
       </Routes>
     </>
   );
