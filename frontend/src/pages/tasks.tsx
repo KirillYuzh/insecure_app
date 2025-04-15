@@ -31,7 +31,9 @@ const categories = [
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleCategories, setVisibleCategories] = useState<string[]>([...categories]);
+  const [visibleCategories, setVisibleCategories] = useState<string[]>(
+    categories.filter(category => category !== 'solved')
+  );
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [flag, setFlag] = useState("");

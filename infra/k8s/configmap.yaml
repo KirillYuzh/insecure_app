@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: insecure-config
+data:
+  db-name: iapp_db

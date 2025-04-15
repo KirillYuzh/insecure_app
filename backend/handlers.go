@@ -237,7 +237,7 @@ func getAccount(c *gin.Context) {
 	// Кол-во решённых задач
 	var solved int
 	err = db.QueryRow(`
-        SELECT COUNT(*) FROM submissions WHERE user_id = $1 AND is_correct = TRUE
+        SELECT COUNT(*) FROM c_users_tasks_solutions WHERE user_id = $1 AND is_solved = TRUE
     `, userID).Scan(&solved)
 	if err != nil {
 		solved = 0 // fallback

@@ -27,7 +27,7 @@ const categories = [
   { label: "Osint", value: "osint" },
   { label: "Cryptography", value: "cryptography" },
   { label: "R-Engineering", value: "reverse engineering" },
-  { label: "Forensics", value: "forensics" },
+  { label: "Forensic", value: "forensic" },
   { label: "Misc", value: "misc" },
 ];
 
@@ -114,6 +114,7 @@ export default function CreateTaskPage() {
             placeholder="Enter task title"
             errorMessage={errors.title}
             isInvalid={!!errors.title}
+            maxLength={32}
           />
           
           <Input
@@ -162,6 +163,7 @@ export default function CreateTaskPage() {
             placeholder="Enter task flag"
             errorMessage={errors.flag}
             isInvalid={!!errors.flag}
+            maxLength={200}
             description="Flag that users need to submit"
           />
           
