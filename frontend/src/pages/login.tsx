@@ -4,7 +4,7 @@ import DefaultLayout from "@/layouts/default";
 import { addToast } from "@heroui/react";
 import { siteConfig } from "@/config/site";
 import { Link } from "@heroui/link";
-import { login } from "@/components/api";
+import { login } from "@/components/auth-api";
 
 
 type LoginFormData = {

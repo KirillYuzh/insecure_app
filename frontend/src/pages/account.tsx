@@ -8,7 +8,7 @@ import {
   Spacer,
   Chip,
 } from '@nextui-org/react';
-import { api } from '@/components/api';
+import { api } from '@/components/auth-api';
 import { useNavigate } from "react-router-dom";
 import player_avatar from "../assets/avatar-red.svg";
 import DefaultLayout from '@/layouts/default';

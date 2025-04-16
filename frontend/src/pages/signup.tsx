@@ -3,7 +3,7 @@ import { Form, Input, Button } from "@heroui/react";
 import DefaultLayout from "@/layouts/default";
 import { Link } from "@heroui/link";
 import { siteConfig } from "@/config/site";
-import { signup } from "@/components/api";
+import { signup } from "@/components/auth-api";
 import { addToast } from "@heroui/react";
 
 type FormData = {

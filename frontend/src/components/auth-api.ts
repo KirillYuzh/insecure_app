@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/";
+const API_URL = "http://localhost:8080/auth/";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -19,7 +19,7 @@ api.interceptors.response.use(
 );
 
 export const login = async (email: string, password: string) => {
-  const response = await api.post('login', { email, password });
+  const response = await api.post('auth/login', { email, password });
   return response.data;
 }
 
@@ -28,11 +28,6 @@ export const logout = async () => {
 }
 
 export const signup = async (username: string, email: string, name: string, password: string) => {
-  const response = await api.post('signup', { username, email, name, password });
-  return response.data;
-}
-
-export const submit_flag = async (task_id: string, flag: string) => {
-  const response = await api.post('tasks/flag/', { task_id, flag });
+  const response = await api.post('auth/signup', { username, email, name, password });
   return response.data;
 }

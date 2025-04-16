@@ -268,22 +268,101 @@ func authMiddleware() gin.HandlerFunc {
 	}
 }
 
-func requireRole(requiredRole string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID, exists := c.Get("user_id")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
-		}
+// func requireRole(requiredRole string) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		userID, exists := c.Get("user_id")
+// 		if !exists {
+// 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+// 			c.Abort()
+// 			return
+// 		}
 
-		var role string
-		err := db.QueryRow("SELECT get_user_role_by_id($1)", userID).Scan(&role)
-		if err != nil || role != requiredRole {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
-			c.Abort()
-			return
-		}
-		c.Next()
+// 		var role string
+// 		err := db.QueryRow("SELECT get_user_role_by_id($1)", userID).Scan(&role)
+// 		if err != nil || role != requiredRole {
+// 			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+// 			c.Abort()
+// 			return
+// 		}
+// 		c.Next()
+// 	}
+// }
+
+func getAccount(c *gin.Context) {
+	// Получаем JWT токен из куки
+	tokenString, err := c.Cookie("jwt")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+		return
 	}
+
+	// Парсим токен
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Проверяем алгоритм подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil // Замените на ваш секретный ключ
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Извлекаем claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
+	}
+
+	// Получаем user_id из claims
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid user ID in token",
+		})
+		return
+	}
+
+	// Остальной код остается без изменений
+	var username, name, email string
+	var score int
+	err = db.QueryRow(`
+        SELECT username, name, email, score FROM users WHERE id = $1
+    `, userID).Scan(&username, &name, &email, &score)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Кол-во решённых задач
+	var solved int
+	err = db.QueryRow(`
+        SELECT COUNT(*) FROM c_users_tasks_solutions WHERE user_id = $1 AND is_solved = TRUE
+    `, userID).Scan(&solved)
+	if err != nil {
+		solved = 0 // fallback
+	}
+
+	// Название команды (если состоит в какой-то)
+	var teamTitle *string
+	err = db.QueryRow(`
+        SELECT t.title FROM c_users_teams ut
+        JOIN teams t ON ut.team_id = t.id
+        WHERE ut.user_id = $1 LIMIT 1
+    `, userID).Scan(&teamTitle)
+	if err != nil {
+		teamTitle = nil
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"username":     username,
+		"name":         name,
+		"email":        email,
+		"score":        score,
+		"solved_tasks": solved,
+		"team":         teamTitle,
+	})
 }

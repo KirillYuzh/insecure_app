@@ -13,7 +13,7 @@ declare module "@react-types/shared" {
 export function Provider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [placement, setPlacement] = useState("top-right");
-  setPlacement("top-right")
+  // setPlacement("top-right")
 
   return (
     <HeroUIProvider navigate={navigate} useHref={useHref}>
