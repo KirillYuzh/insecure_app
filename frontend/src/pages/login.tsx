@@ -47,6 +47,11 @@ export default function LoginPage() {
     try {
       console.log(data);
       await login(data.email, data.password);
+      addToast({
+        title: "Logged in",
+        description: "You were logged in!",
+        color: "success",
+      });
     } catch (error: any) {
       let errorMessage = "Login failed";
       
