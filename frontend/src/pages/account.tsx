@@ -113,28 +113,34 @@ const AccountComponent: React.FC = () => {
                   <p className="text-default-500">Username</p>
                 </CardBody>
               </Card>
-              
+              <Card>
+                <CardBody>
+                  <h1 className="text-primary">{player.name}</h1>
+                  <p className="text-default-500">Name</p>
+                </CardBody>
+              </Card>
               <Card>
                 <CardBody>
                   <h4>{player.team || "No team"}</h4>
                   <p className="text-default-500">Team</p>
                 </CardBody>
               </Card>
-              
-              <Card>
-                <CardBody>
-                  <h1 className="text-primary">{player.solved_tasks}</h1>
-                  <p className="text-default-500">Solved tasks</p>
-                </CardBody>
-              </Card>
             </div>
             
             {/* Right Column */}
-            <div className="flex flex-col items-end">
+            <div className="flex flex-col items-end space-y-6">
+
               <Card className="w-full">
                 <CardBody className="text-right">
                   <h1 className="text-primary">{player.score}</h1>
                   <p className="text-default-500">Score</p>
+                </CardBody>
+              </Card>
+
+              <Card className="w-full">
+                <CardBody className="text-right">
+                  <h1 className="text-primary">{player.solved_tasks}</h1>
+                  <p className="text-default-500">Solved tasks</p>
                 </CardBody>
               </Card>
             </div>
