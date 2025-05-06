@@ -4,7 +4,7 @@ import DefaultLayout from "@/layouts/default";
 import { addToast } from "@heroui/react";
 import { siteConfig } from "@/config/site";
 import { Link } from "@heroui/link";
-import { login } from "@/components/api";
+import { login } from "@/components/auth-api";
 
 
 type LoginFormData = {
@@ -47,6 +47,11 @@ export default function LoginPage() {
     try {
       console.log(data);
       await login(data.email, data.password);
+      addToast({
+        title: "Logged in",
+        description: "You were logged in!",
+        color: "success",
+      });
     } catch (error: any) {
       let errorMessage = "Login failed";
       

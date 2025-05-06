@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: insecure-secrets
-type: Opaque
-data:
-  db-user: a2lyaWxs          # base64 of 'kirill'
-  db-password: YWRtaW4=      # base64 of 'admin'

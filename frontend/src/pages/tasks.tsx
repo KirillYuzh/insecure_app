@@ -9,7 +9,7 @@ import { addToast } from "@heroui/react";
 
 import DefaultLayout from "@/layouts/default";
 import { title } from "@/components/primitives";
-import { api, submit_flag } from '@/components/api';
+import { api, submit_flag } from '@/components/challenge-api';
 
 interface Task {
   id: string;
